@@ -1,10 +1,15 @@
 package ui
 
 import (
+	"context"
+
 	"github.com/KenethSandoval/uigh/ui/common"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/go-github/v43/github"
+
+	"github.com/KenethSandoval/uigh/ui/activity"
 )
 
 type status int
@@ -16,19 +21,29 @@ const (
 
 type model struct {
 	quit     bool
+	username string
+	gh       *github.Client
 	spinner  spinner.Model
 	status   status
-	username string
+	activity activity.Model
+	user     *github.User
 }
 
-func NewProgram(username string) *tea.Program {
-	return tea.NewProgram(initialModel(username), tea.WithAltScreen())
+type (
+	userLoadedMsg *github.User
+	errorMsg      error
+)
+
+func NewProgram(username string, gh *github.Client) *tea.Program {
+	return tea.NewProgram(initialModel(username, gh), tea.WithAltScreen())
 }
 
-func initialModel(username string) model {
+func initialModel(username string, gh *github.Client) model {
 	return model{
 		username: username,
 		status:   statusInit,
+		gh:       gh,
+		spinner:  common.NewSpinnerModel(),
 	}
 }
 
@@ -52,12 +67,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	var cmds []tea.Cmd
 	cmds = common.AppendIfNotNil(cmds, cmd)
-	m, cmd = updateChildre(m, msg)
+	m, cmd = updateChildren(m, msg)
 	cmds = common.AppendIfNotNil(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
-func updateChildre(m model, msg tea.Msg) (model, tea.Cmd) {
+func updateChildren(m model, msg tea.Msg) (model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch m.status {
 	case statusInit:
@@ -70,10 +85,11 @@ func updateChildre(m model, msg tea.Msg) (model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := "KENETH"
+	s := ""
 	switch m.status {
 	case statusInit:
-		s += " Loading user..."
+	case statusLoading:
+		s += common.AppStyle().Render(m.spinner.View() + " Loading user...")
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top, s)
@@ -83,5 +99,9 @@ func (m model) loadUserCmd() tea.Msg {
 	if m.status == statusLoading {
 		return spinner.Tick()
 	}
-	return tea.ExitAltScreen()
+	user, _, err := m.gh.Users.Get(context.Background(), m.username)
+	if err != nil {
+		return errorMsg(err)
+	}
+	return userLoadedMsg(user)
 }

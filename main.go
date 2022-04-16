@@ -1,15 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/KenethSandoval/uigh/ui"
+	"github.com/KenethSandoval/uigh/cmd"
 )
 
 func main() {
-	if err := ui.NewProgram("stiv").Start(); err != nil {
-		fmt.Println("Could not start uigh", err)
-		os.Exit(1)
-	}
+	cmd.Execute()
 }
