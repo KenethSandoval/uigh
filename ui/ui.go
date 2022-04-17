@@ -17,15 +17,18 @@ type status int
 const (
 	statusInit status = iota
 	statusLoading
+	statusReady
 )
 
 type model struct {
 	quit     bool
+	done     bool
 	username string
 	gh       *github.Client
 	spinner  spinner.Model
 	status   status
 	activity activity.Model
+	errorMsg string
 	user     *github.User
 }
 
@@ -76,10 +79,11 @@ func updateChildren(m model, msg tea.Msg) (model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch m.status {
 	case statusInit:
-	case statusLoading:
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmd = tea.Batch(cmd, m.loadUserCmd)
 		m.status = statusLoading
+	case statusLoading:
+		m.spinner, cmd = m.spinner.Update(msg)
 	}
 	return m, cmd
 }
