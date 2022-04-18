@@ -54,9 +54,12 @@ func PaneActiveStyle(width int, height int) lipgloss.Style {
 	return paneStyle(successColor, width, height)
 }
 
+func PaneInactiveStyle(width int, height int) lipgloss.Style {
+	return paneStyle(grayColor, width, height)
+}
+
 func PaneSelectedItemStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(whiteColor).Background(infoColor)
-
 }
 
 func paneStyle(color lipgloss.AdaptiveColor, width int, height int) lipgloss.Style {
