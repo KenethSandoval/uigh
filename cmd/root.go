@@ -47,6 +47,7 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
+// getVariable return an empty string if the flags (Username, Token) are incorrect
 func getVariable(cmd *cobra.Command, name string, param string, env string) string {
 	value, err := cmd.PersistentFlags().GetString(param)
 	if err != nil {
