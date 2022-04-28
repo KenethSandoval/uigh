@@ -31,7 +31,7 @@ var rootCmd = &cobra.Command{
 		)
 		tc := oauth2.NewClient(ctx, ts)
 		gh := github.NewClient(tc)
-		if err := ui.NewProgram(Username, gh); err != nil {
+		if err := ui.NewProgram(Username, gh).Start(); err != nil {
 			fmt.Println("Could not start uigh", err)
 			os.Exit(1)
 		}

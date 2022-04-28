@@ -3,13 +3,14 @@ package ui
 import (
 	"context"
 
-	"github.com/KenethSandoval/uigh/ui/common"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/go-github/v43/github"
 
 	"github.com/KenethSandoval/uigh/ui/activity"
+	"github.com/KenethSandoval/uigh/ui/common"
+	"github.com/KenethSandoval/uigh/ui/repositories"
 )
 
 type status int
@@ -21,15 +22,16 @@ const (
 )
 
 type model struct {
-	quit     bool
-	done     bool
-	username string
-	gh       *github.Client
-	spinner  spinner.Model
-	status   status
-	activity activity.Model
-	errorMsg string
-	user     *github.User
+	quit         bool
+	done         bool
+	username     string
+	gh           *github.Client
+	spinner      spinner.Model
+	status       status
+	activity     activity.Model
+	repositories repositories.Model
+	errorMsg     string
+	user         *github.User
 }
 
 type (
@@ -67,6 +69,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// TODO: windows resizing
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
+
+	case userLoadedMsg:
+		m.user = msg
+		m.username = *msg.Login
+		m.status = statusReady
+		m.repositories = repositories.NewModel(msg, m.gh)
+		cmd = m.repositories.Init()
+	case errorMsg:
+		m.errorMsg = msg.Error()
 	}
 	var cmds []tea.Cmd
 	cmds = common.AppendIfNotNil(cmds, cmd)
@@ -84,6 +95,8 @@ func updateChildren(m model, msg tea.Msg) (model, tea.Cmd) {
 		m.status = statusLoading
 	case statusLoading:
 		m.spinner, cmd = m.spinner.Update(msg)
+	case statusReady:
+		m.repositories, cmd = m.repositories.Update(msg)
 	}
 	return m, cmd
 }
@@ -94,6 +107,12 @@ func (m model) View() string {
 	case statusInit:
 	case statusLoading:
 		s += common.AppStyle().Render(m.spinner.View() + " Loading user...")
+	case statusReady:
+		s += m.repositories.View()
+	}
+
+	if m.errorMsg != "" {
+		s += "\n\n" + m.errorMsg
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top, s)
