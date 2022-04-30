@@ -8,7 +8,9 @@ fmt:
 	go fmt ./...
 
 clean:
+	@echo "****** CLEANING ******"
 	rm -rf $(WRKDIR)/bin/
 
 build:clean
+	@echo "****** BUILDING BINARY ******"
 	go build -o bin/$(NAME) .
